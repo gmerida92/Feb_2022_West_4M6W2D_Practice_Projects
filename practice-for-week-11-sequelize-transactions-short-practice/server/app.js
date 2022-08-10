@@ -1,141 +1,141 @@
 // Instantiate Express and the application - DO NOT MODIFY
-const express = require('express');
+const express = require("express");
 const app = express();
 
 // Import environment variables in order to connect to database - DO NOT MODIFY
-require('dotenv').config();
+require("dotenv").config();
 
 // Import the models used in these routes - DO NOT MODIFY
-const { Account, sequelize } = require('./db/models');
+const { Account, sequelize } = require("./db/models");
 
 // Express using json - DO NOT MODIFY
 app.use(express.json());
 
-
 // STEP 1: Unmanaged Transaction
-app.get('/unmanaged', async (req, res, next) => {
-    // Unmanaged transactions are first saved to a variable
-    // Your code here
-    try {
-        // Queries to be performed in the transaction:
-        
-        // Find Rose's account, add 200 to her balance, then save
-        let rose = await Account.findOne({
-            where: { 
-                firstName: 'Rose', 
-                lastName: 'Tyler' 
-            }
-        });
-        await rose.update({
-            balance: rose.balance + 200
-        });
-        await rose.save();
+app.get("/unmanaged", async (req, res, next) => {
+	// Unmanaged transactions are first saved to a variable
+	const t = await sequelize.transaction();
+	try {
+		// Queries to be performed in the transaction:
 
-        // Find Martha's account, subtract 200 from her balance, then save
-        let martha = await Account.findOne({
-            where: { 
-                firstName: 'Martha', 
-                lastName: 'Jones' 
-            }
-        });
-        await martha.update({
-            balance: martha.balance - 200
-        }, {
-            transaction: t
-        });
-        await martha.save();
-        
+		// Find Rose's account, add 200 to her balance, then save
+		let rose = await Account.findOne({
+			where: {
+				firstName: "Rose",
+				lastName: "Tyler",
+			},
+		});
+		await rose.update(
+			{
+				balance: rose.balance + 200,
+			},
+			{ transaction: t }
+		);
+		await rose.save();
 
-        // After the transaction, formulate the response
-        // Find all accounts, ordered by firstName, returned as a JSON response
-        let allAccounts = await Account.findAll({ order: [ ['firstName', 'ASC'] ] });
-        res.json(allAccounts);
-    } catch (error) {
-        // If an error occurred, the transaction must be rolled back
-        // Your code here
+		// Find Martha's account, subtract 200 from her balance, then save
+		let martha = await Account.findOne({
+			where: {
+				firstName: "Martha",
+				lastName: "Jones",
+			},
+		});
+		await martha.update(
+			{
+				balance: martha.balance - 200,
+			},
+			{
+				transaction: t,
+			}
+		);
+		await martha.save();
+		await t.commit();
+		// After the transaction, formulate the response
+		// Find all accounts, ordered by firstName, returned as a JSON response
+		let allAccounts = await Account.findAll({ order: [["firstName", "ASC"]] });
+		res.json(allAccounts);
+	} catch (error) {
+		// If an error occurred, the transaction must be rolled back
+		await t.rollback();
 
-        // The error is then passed to the error handler
-        next(error);
-    }
-
+		// The error is then passed to the error handler
+		next(error);
+	}
 });
-
 
 // BONUS: Managed Transaction
 
-app.get('/managed', async (req, res, next) => {
-    try {
-        // Create a transaction with a callback function
-        // If the function executes successfully, the transaction is committed
-        
-        // Your code here
-        
-        // Queries to be performed in the transaction:
+app.get("/managed", async (req, res, next) => {
+	try {
+		// Create a transaction with a callback function
+		// If the function executes successfully, the transaction is committed
 
-        // Find Rose's account, add 200 to her balance, then save
-        let rose = await Account.findOne({
-            where: {
-                firstName: 'Rose',
-                lastName: 'Tyler'
-            }
-        });
-        await rose.update({
-            balance: rose.balance + 200
-        });
-        await rose.save();
+		// Your code here
 
-        // Find Amy's account, subtract 200 from her balance, then save
-        let amy = await Account.findOne({
-            where: {
-                firstName: 'Amy',
-                lastName: 'Pond'
-            }
-        });
-        await amy.update({
-            balance: amy.balance - 200
-        });
-        await amy.save();
+		// Queries to be performed in the transaction:
 
-        // After the transaction, formulate the response
-        // Find all accounts, ordered by firstName, returned as a JSON response
-        let allAccounts = await Account.findAll({ order: [ ['firstName', 'ASC'] ] });
-        res.json(allAccounts);
-    } catch (error) {
-        // If an error was thrown in the transaction, it will be rolled back
-        // automatically
+		// Find Rose's account, add 200 to her balance, then save
+		let rose = await Account.findOne({
+			where: {
+				firstName: "Rose",
+				lastName: "Tyler",
+			},
+		});
+		await rose.update({
+			balance: rose.balance + 200,
+		});
+		await rose.save();
 
-        // Pass any errors that occurred to an error handler
-        next(error);
-     }
+		// Find Amy's account, subtract 200 from her balance, then save
+		let amy = await Account.findOne({
+			where: {
+				firstName: "Amy",
+				lastName: "Pond",
+			},
+		});
+		await amy.update({
+			balance: amy.balance - 200,
+		});
+		await amy.save();
+
+		// After the transaction, formulate the response
+		// Find all accounts, ordered by firstName, returned as a JSON response
+		let allAccounts = await Account.findAll({ order: [["firstName", "ASC"]] });
+		res.json(allAccounts);
+	} catch (error) {
+		// If an error was thrown in the transaction, it will be rolled back
+		// automatically
+
+		// Pass any errors that occurred to an error handler
+		next(error);
+	}
 });
-
 
 // Current status of all accounts - DO NOT MODIFY
-app.get('/accounts', async (req, res) => {
-    // Find all accounts, ordered by firstName, as a JSON response
-    let allAccounts = await Account.findAll({ order: [ ['firstName', 'ASC'] ] });
-    res.json(allAccounts);
+app.get("/accounts", async (req, res) => {
+	// Find all accounts, ordered by firstName, as a JSON response
+	let allAccounts = await Account.findAll({ order: [["firstName", "ASC"]] });
+	res.json(allAccounts);
 });
 
-
 // Root route - DO NOT MODIFY
-app.get('/', (req, res) => {
-    res.json({
-        message: "API server is running"
-    });
+app.get("/", (req, res) => {
+	res.json({
+		message: "API server is running",
+	});
 });
 
 // Catch-all error-handling middleware - DO NOT MODIFY
 app.use((err, req, res, next) => {
-  console.log(err);
-  const statusCode = err.statusCode || 500;
-  res.status(statusCode);
-  res.json({
-    message: err.message || 'Something went wrong',
-    statusCode
-  });
+	console.log(err);
+	const statusCode = err.statusCode || 500;
+	res.status(statusCode);
+	res.json({
+		message: err.message || "Something went wrong",
+		statusCode,
+	});
 });
 
 // Set port and listen for incoming requests - DO NOT MODIFY
-const port = 5000;
-app.listen(port, () => console.log('Server is listening on port', port));
+const port = 8000;
+app.listen(port, () => console.log("Server is listening on port", port));
